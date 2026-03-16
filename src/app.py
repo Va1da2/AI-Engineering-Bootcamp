@@ -1,9 +1,10 @@
 import streamlit as st
 
-from core.config import config
 from openai import OpenAI
 from groq import Groq
 from google import genai
+
+from core.config import config
 
 
 def run_llm(provider: str, model_name: str, messages: list[dict], max_tokens: int=500) -> str:
