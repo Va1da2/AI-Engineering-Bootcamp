@@ -35,13 +35,13 @@ def run_llm(provider: str, model_name: str, messages: list[dict], max_tokens: in
         response = client.chat.completions.create(
             model=model_name,
             messages=messages,
-            max_tokens=max_tokens
+            max_completion_tokens=max_tokens
         ).choices[0].message.content
     else:
         response = client.chat.completions.create(
             model=model_name,
             messages=messages,
-            max_tokens=max_tokens,
+            max_completion_tokens=max_tokens,
             reasoning_effort="minimal"
         ).choices[0].message.content
 
