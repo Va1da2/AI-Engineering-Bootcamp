@@ -1,10 +1,8 @@
 from pydantic import BaseModel
 
 
-class ChatRequest(BaseModel):
-    provider: str
-    model_name: str
-    messages: list[dict]
+class RAGRequest(BaseModel):
+    query: str
 
-class ChatResponse(BaseModel):
-    message: str
+class RAGResponse(BaseModel):
+    answer: str
