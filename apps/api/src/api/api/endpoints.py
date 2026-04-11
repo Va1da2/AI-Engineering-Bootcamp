@@ -22,7 +22,7 @@ def rag(request: Request, payload: RAGRequest) -> RAGResponse:
 
     result = RAG_pipeline(payload.query, qdrant_client)
 
-    return RAGResponse(answer=result)
+    return RAGResponse(answer=result["answer"])
 
 
 api_router = APIRouter()

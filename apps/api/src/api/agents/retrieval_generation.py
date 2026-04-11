@@ -1,6 +1,13 @@
 import openai
 
+from langsmith import traceable, get_current_run_tree
 
+
+@traceable(
+    name="embed_query",
+    run_type="embedding",
+    metadata={"ls_provider": "openai", "ls_model": "text_embedding_3_small"}
+)
 def get_embedding(text, model='text-embedding-3-small'):
 
     response = openai.embeddings.create(
@@ -8,8 +15,19 @@ def get_embedding(text, model='text-embedding-3-small'):
         model=model
     )
 
+    current_run = get_current_run_tree()
+    if current_run:
+        current_run.metadata["usage_metadata"] = {
+            "input_tokens": response.usage.prompt_tokens,
+            "total_tokens": response.usage.total_tokens
+        }
+
     return response.data[0].embedding
 
+@traceable(
+    name="retrieve_data",
+    run_type='retriever'
+)
 def retrieve_data(query, qdrant_client, k=5):
     query_embedding = get_embedding(query)
     results = qdrant_client.query_points(
@@ -35,6 +53,10 @@ def retrieve_data(query, qdrant_client, k=5):
         "retrieved_context_ratings": retrieved_context_ratings
     }
 
+@traceable(
+    name="format_retrieved_context",
+    run_type="prompt"
+)
 def process_context(context):
     
     formatted_context = ""
@@ -44,6 +66,10 @@ def process_context(context):
 
     return formatted_context
 
+@traceable(
+    name="build_prompt",
+    run_type="prompt"
+)
 def build_prompt(preprocessed_context, question):
 
     prompt = f"""
@@ -65,6 +91,11 @@ def build_prompt(preprocessed_context, question):
 
     return prompt
 
+@traceable(
+    name="generate_answer",
+    run_type='llm',
+    metadata={"ls_provider": "openai", "ls_model": "gpt-5.4-nano"}
+)
 def generate_answer(prompt):
 
     response = openai.chat.completions.create(
@@ -73,8 +104,19 @@ def generate_answer(prompt):
         reasoning_effort="none"
     )
 
+    current_run = get_current_run_tree()
+    if current_run:
+        current_run.metadata["usage_metadata"] = {
+            "input_tokens": response.usage.prompt_tokens,
+            "output_tokens": response.usage.completion_tokens,
+            "total_tokens": response.usage.total_tokens
+        }
+
     return response.choices[0].message.content
 
+@traceable(
+    name="rag_papeline",
+)
 def RAG_pipeline(question, qdrant_client, top_k=5):
 
     retrieved_context = retrieve_data(question, qdrant_client, top_k)
@@ -82,4 +124,12 @@ def RAG_pipeline(question, qdrant_client, top_k=5):
     prompt = build_prompt(preprocess_context, question)
     answer = generate_answer(prompt)
 
-    return answer
+    final_result = {
+        "answer": answer,
+        "question": question,
+        "retrieved_context_ids": retrieved_context["retrieved_context_ids"],
+        "retrieved_context": retrieved_context["retrieved_context"],
+        "similarity_scores": retrieved_context["similarity_scores"],
+    }
+
+    return final_result
