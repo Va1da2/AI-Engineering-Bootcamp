@@ -26,6 +26,7 @@ dependencies = [
 
 [package.dev-dependencies]
 dev = [
+    { name = "instructor" },
     { name = "langchain-openai" },
     { name = "langsmith" },
     { name = "matplotlib" },
@@ -47,6 +48,7 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [
+    { name = "instructor", specifier = ">=1.15.1" },
     { name = "langchain-openai", specifier = ">=1.1.12" },
     { name = "langsmith", specifier = ">=0.7.30" },
     { name = "matplotlib", specifier = ">=3.10.8" },
@@ -180,6 +182,7 @@ dependencies = [
     { name = "fastapi" },
     { name = "google-genai" },
     { name = "groq" },
+    { name = "instructor" },
     { name = "langsmith" },
     { name = "openai" },
     { name = "pydantic" },
@@ -193,6 +196,7 @@ requires-dist = [
     { name = "fastapi", specifier = ">=0.135.1" },
     { name = "google-genai", specifier = ">=1.67.0" },
     { name = "groq", specifier = ">=1.1.1" },
+    { name = "instructor", specifier = ">=1.15.1" },
     { name = "langsmith", specifier = ">=0.7.30" },
     { name = "openai", specifier = ">=2.28.0" },
     { name = "pydantic", specifier = ">=2.12.5" },
