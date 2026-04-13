@@ -4,7 +4,7 @@ import numpy as np
 
 from langsmith import traceable, get_current_run_tree
 from pydantic import BaseModel, Field
-from qdrant_client.models import Filter, FieldCondition, MatchValue
+from qdrant_client.models import Filter, FieldCondition, MatchValue, Prefetch, Document, RrfQuery, Rrf
 
 
 class RAGUsedContext(BaseModel):
@@ -42,10 +42,26 @@ def get_embedding(text, model='text-embedding-3-small'):
     run_type='retriever'
 )
 def retrieve_data(query, qdrant_client, k=5):
+   
     query_embedding = get_embedding(query)
     results = qdrant_client.query_points(
-        collection_name="Amazon-items-collection-01",
-        query=query_embedding,
+        collection_name="Amazon-items-collection-01-hybrid-search",
+        prefetch=[
+            Prefetch(
+                query=query_embedding,
+                using="text-embedding-3-small",
+                limit=20
+            ),
+            Prefetch(
+                query=Document(
+                    text=query,
+                    model="qdrant/bm25",
+                ),
+                using="bm25",
+                limit=20
+            )
+        ],
+        query=RrfQuery(rrf=Rrf(weights=[1,1])),
         limit=k
     )
 

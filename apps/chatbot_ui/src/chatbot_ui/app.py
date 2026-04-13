@@ -4,6 +4,12 @@ import requests
 from chatbot_ui.core.config import config
 
 
+st.set_page_config(
+    page_title="Ecommerce Assistant",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
 def api_call(method: str, url: str, **kwargs):
 
     def _show_error_popup(message):
@@ -44,6 +50,23 @@ for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
+if "used_context" not in st.session_state:
+    st.session_state.used_context = []
+
+with st.sidebar:
+    (suggestions_tab,) = st.tabs(["Suggestions"])
+    
+    with suggestions_tab:
+        if st.session_state.used_context:
+            for idx, item in enumerate(st.session_state.used_context):
+                st.caption(item.get("description", "No description"))
+                if "image_url" in item:
+                    st.image(item["image_url"], width=250)
+                st.caption(f"Price: {item['price']} USD")
+                st.divider()
+        else:
+            st.write("No suggestions yet")
+
 if prompt := st.chat_input("How can I assist you today?"):
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
@@ -51,13 +74,11 @@ if prompt := st.chat_input("How can I assist you today?"):
 
     
     with st.chat_message("assistant"):
-        output = api_call(
-            "post",
-            f"{config.API_URL}/rag",
-            json={"query": prompt}
-        )
+        state, output = api_call("post", f"{config.API_URL}/rag", json={"query": prompt})
+        answer = output["answer"]
+        used_context = output["used_context"]
 
-        print(output)
-        answer = output[1]["answer"]
         st.markdown(answer)
+        st.session_state.used_context = used_context
     st.session_state.messages.append({"role": "assistant", "content": answer})
+    st.rerun()
