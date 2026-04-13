@@ -3,8 +3,8 @@ import logging
 from fastapi import APIRouter, Request
 from qdrant_client import QdrantClient
 
-from api.api.models import RAGRequest, RAGResponse
-from api.agents.retrieval_generation import RAG_pipeline
+from api.api.models import RAGRequest, RAGResponse, RAGUsedContext
+from api.agents.retrieval_generation import rag_pipeline_wrapper
 
 
 logging.basicConfig(
@@ -20,9 +20,12 @@ rag_router = APIRouter()
 @rag_router.post("/")
 def rag(request: Request, payload: RAGRequest) -> RAGResponse:
 
-    result = RAG_pipeline(payload.query, qdrant_client)
+    result = rag_pipeline_wrapper(payload.query, qdrant_client)
 
-    return RAGResponse(answer=result["answer"])
+    return RAGResponse(
+        answer=result["answer"],
+        used_context=[RAGUsedContext(**item) for item in result["used_context"]]
+    )
 
 
 api_router = APIRouter()
