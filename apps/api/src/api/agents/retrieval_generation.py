@@ -6,6 +6,8 @@ from langsmith import traceable, get_current_run_tree
 from pydantic import BaseModel, Field
 from qdrant_client.models import Filter, FieldCondition, MatchValue, Prefetch, Document, RrfQuery, Rrf
 
+from api.agents.utils.prompt_management import from_template_config
+
 
 class RAGUsedContext(BaseModel):
     id: str = Field(description="ID of the item used to answer the question.")
@@ -101,24 +103,9 @@ def process_context(context):
 )
 def build_prompt(preprocessed_context, question):
 
-    prompt = f"""
-    You are a shopping assistant that can answer questions about the products in stock.
+    prompt = from_template_config("api/agents/prompts/retrieval_generation.yaml", "retrieval_generation")
 
-    You will be given a question and a list of context.
-
-    Instructions:
-    - Answer the question based on the provided context only.
-    - Never use word context and refer to it as the available products.
-    - Do not use markdown formatting.
-
-    Context:
-    {preprocessed_context}
-
-    Question:
-    {question}
-    """
-
-    return prompt
+    return prompt.render(preprocessed_context=preprocessed_context, questions=question)
 
 @traceable(
     name="generate_answer",
@@ -181,8 +168,9 @@ def rag_pipeline_wrapper(question: str, qdrant_client, top_k=5):
 
     for item in result.get("references", []):
         payload = qdrant_client.query_points(
-            collection_name="Amazon-items-collection-01",
+            collection_name="Amazon-items-collection-01-hybrid-search",
             query=dummy_vector,
+            using="text-embedding-3-small",
             limit=1,
             with_payload=True,
             with_vectors=False,
