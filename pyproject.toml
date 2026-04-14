@@ -23,6 +23,7 @@ members = [
 
 [dependency-groups]
 dev = [
+    "cohere>=6.1.0",
     "instructor>=1.15.1",
     "langchain-openai>=1.1.12",
     "langsmith>=0.7.30",
