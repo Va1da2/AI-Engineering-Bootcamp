@@ -4,7 +4,7 @@ from jinja2 import Template
 from langsmith import Client as LSClient
 
 
-def from_template_config(yaml_path: str, prompt: str):
+def from_template_config(yaml_path: str, prompt: str) -> Template:
 
     with open(yaml_path, 'r') as file:
         config = yaml.safe_load(file)

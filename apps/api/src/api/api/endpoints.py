@@ -4,7 +4,7 @@ from fastapi import APIRouter, Request
 from qdrant_client import QdrantClient
 
 from api.api.models import RAGRequest, RAGResponse, RAGUsedContext
-from api.agents.retrieval_generation import rag_pipeline_wrapper
+from api.agents.graph import run_agent_wrapper
 
 
 logging.basicConfig(
@@ -15,12 +15,12 @@ logger = logging.getLogger(__name__)
 
 qdrant_client = QdrantClient(url="http://qdrant:6333")
 
-rag_router = APIRouter()
+agent_router = APIRouter()
 
-@rag_router.post("/")
+@agent_router.post("/")
 def rag(request: Request, payload: RAGRequest) -> RAGResponse:
 
-    result = rag_pipeline_wrapper(payload.query, qdrant_client)
+    result = run_agent_wrapper(payload.query, qdrant_client)
 
     return RAGResponse(
         answer=result["answer"],
@@ -29,4 +29,4 @@ def rag(request: Request, payload: RAGRequest) -> RAGResponse:
 
 
 api_router = APIRouter()
-api_router.include_router(rag_router, prefix="/rag", tags=["rag"])
+api_router.include_router(agent_router, prefix="/agent", tags=["agent"])
