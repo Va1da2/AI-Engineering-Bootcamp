@@ -1,21 +1,9 @@
 import openai
 
-from pydantic import BaseModel, Field
 from qdrant_client import QdrantClient
 from qdrant_client.models import Prefetch, Document, RrfQuery, Rrf
 from langchain.tools import tool
 from langsmith import traceable, get_current_run_tree
-
-from api.agents.utils.prompt_management import from_template_config
-
-
-class RAGUsedContext(BaseModel):
-    id: str = Field(description="ID of the item used to answer the question.")
-    description: str = Field(description="Short description of the item used to answer the question")
-
-class RAGGenerationResponse(BaseModel):
-    answer: str = Field(description="Answer to the question.")
-    references: list[RAGUsedContext] = Field(description="List of items to answer the question.")
 
 
 @traceable(

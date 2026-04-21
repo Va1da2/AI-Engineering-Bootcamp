@@ -1,28 +1,12 @@
 import instructor
 
-from typing import List
-
-from jinja2 import Template
-from pydantic import BaseModel, Field
 from langchain_core.messages import SystemMessage
 from langchain_openai import ChatOpenAI
 from langsmith import traceable, get_current_run_tree
 
 from api.agents.tools import get_formatted_item_context
 from api.agents.utils.prompt_management import from_template_config
-
-
-class RAGUsedContext(BaseModel):
-    id: str = Field(description="ID of the item used to answer the question")
-    description: str = Field(description="Short description of the item used to answer the question")
-
-class FinalResponse(BaseModel):
-    answer: str = Field(description="Answer the the question")
-    references: List[RAGUsedContext] = Field(description="List of items used to answer the question")
-
-class IntentRouterNode(BaseModel):
-    question_relevant: bool
-    answer: str
+from api.agents.models import FinalResponse, IntentRouterNode
 
 
 @traceable(

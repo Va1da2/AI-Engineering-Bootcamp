@@ -1,28 +1,15 @@
 import numpy as np
 
-from typing import Any, Annotated, List
-from operator import add
-
-from pydantic import BaseModel
-
 from qdrant_client.models import Filter, FieldCondition, MatchValue
 
 from langchain_core.messages import HumanMessage
 from langgraph.graph import StateGraph, START, END
 from langgraph.prebuilt import ToolNode
 
-from api.agents.agents import RAGUsedContext
 from api.agents.agents import agent_node, intent_router_node
 from api.agents.tools import get_formatted_item_context
+from api.agents.models import State
 
-
-class State(BaseModel):
-    messages: Annotated[List[Any], add] = []
-    question_relevant: bool = False
-    iteration: int = 0
-    answer: str = ""
-    final_answer: bool = False
-    references: Annotated[List[RAGUsedContext], add] = []
 
 def intent_router_conditional_edges(state: State) -> str:
 
