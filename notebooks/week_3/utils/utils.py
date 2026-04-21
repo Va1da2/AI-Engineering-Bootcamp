@@ -9,7 +9,7 @@ from langchain_core.messages import AIMessage
 
 def format_ai_message(response):
 
-    if "tool_calls" in response:
+    if getattr(response, "tool_calls", None):
         tool_calls = []
         for i, tc in enumerate(response.tool_calls):
             tool_calls.append({
