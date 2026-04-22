@@ -4,3 +4,4 @@ data/*
 .DS_Store
 qdrant_data/*
 __pycache__
+postgres_data/*
