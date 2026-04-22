@@ -1,6 +1,6 @@
 import instructor
 
-from langchain_core.messages import SystemMessage
+from langchain_core.messages import SystemMessage, AIMessage
 from langchain_openai import ChatOpenAI
 from langsmith import traceable, get_current_run_tree
 
@@ -47,6 +47,7 @@ def agent_node(state) -> dict:
                 final_answer = True
                 answer = tool_call.get("args").get("answer")
                 references.extend(tool_call.get("args").get("references"))
+                response = AIMessage(content=answer)
     
     return {
         "messages": [response],

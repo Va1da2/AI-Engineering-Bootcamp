@@ -18,9 +18,9 @@ qdrant_client = QdrantClient(url="http://qdrant:6333")
 agent_router = APIRouter()
 
 @agent_router.post("/")
-def rag(request: Request, payload: RAGRequest) -> RAGResponse:
+def agent(request: Request, payload: RAGRequest) -> RAGResponse:
 
-    result = run_agent_wrapper(payload.query, qdrant_client)
+    result = run_agent_wrapper(payload.query, payload.thread_id, qdrant_client)
 
     return RAGResponse(
         answer=result["answer"],

@@ -1,3 +1,5 @@
+import uuid
+
 import streamlit as st
 import requests
 
@@ -9,6 +11,14 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
+
+def get_session_id():
+    if "session_id" not in st.session_state:
+        st.session_state["session_id"] = str(uuid.uuid4())
+
+    return st.session_state["session_id"]
+
+SESSION_ID = get_session_id()
 
 def api_call(method: str, url: str, **kwargs):
 
@@ -74,7 +84,7 @@ if prompt := st.chat_input("How can I assist you today?"):
 
     
     with st.chat_message("assistant"):
-        state, output = api_call("post", f"{config.API_URL}/agent", json={"query": prompt})
+        state, output = api_call("post", f"{config.API_URL}/agent", json={"query": prompt, "thread_id": SESSION_ID})
         answer = output["answer"]
         used_context = output["used_context"]
 

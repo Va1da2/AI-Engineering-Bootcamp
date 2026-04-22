@@ -5,6 +5,7 @@ from qdrant_client.models import Filter, FieldCondition, MatchValue
 from langchain_core.messages import HumanMessage
 from langgraph.graph import StateGraph, START, END
 from langgraph.prebuilt import ToolNode
+from langgraph.checkpoint.postgres import PostgresSaver
 
 from api.agents.agents import agent_node, intent_router_node
 from api.agents.tools import get_formatted_item_context
@@ -56,21 +57,30 @@ workflow.add_conditional_edges(
 )
 workflow.add_edge("tool_node", "agent_node")
 
-graph = workflow.compile()
 
+def run_agent(question: str, thread_id: str) -> dict:
 
-def run_agent(question: str) -> dict:
-
+    config = {
+        "configurable": {
+            "thread_id": thread_id
+        }
+    }
     initial_state = {
         "messages": [HumanMessage(content=question)],
         "iteration": 0
     }
 
-    return graph.invoke(initial_state)
+    with PostgresSaver.from_conn_string(
+        "postgresql://langgraph_user:langgraph_password@postgres:5432/langgraph_db"
+    ) as checkpointer:
+        graph = workflow.compile(checkpointer=checkpointer)
+        result = graph.invoke(initial_state, config)
 
-def run_agent_wrapper(question: str, qdrant_client, top_k=5):
+    return result
 
-    result = run_agent(question)
+def run_agent_wrapper(question: str, thread_id: str, qdrant_client, top_k=5):
+
+    result = run_agent(question, thread_id)
 
     used_context = []
     dummy_vector = np.zeros(1536)
