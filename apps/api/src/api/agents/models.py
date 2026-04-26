@@ -23,3 +23,4 @@ class State(BaseModel):
     answer: str = ""
     final_answer: bool = False
     references: Annotated[List[RAGUsedContext], add] = []
+    trace_id: str = ""

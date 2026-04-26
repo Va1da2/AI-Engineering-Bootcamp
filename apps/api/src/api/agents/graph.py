@@ -114,5 +114,6 @@ def run_agent_wrapper(question: str, thread_id: str, qdrant_client, top_k=5):
 
     return {
         "answer": result.get("answer"),
-        "used_context": used_context
+        "used_context": used_context,
+        "trace_id": result.get("trace_id", "")
     }
