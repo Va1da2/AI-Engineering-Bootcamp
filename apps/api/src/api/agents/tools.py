@@ -1,9 +1,18 @@
 import openai
 
-from qdrant_client import QdrantClient
-from qdrant_client.models import Prefetch, Document, RrfQuery, Rrf
 from langchain.tools import tool
 from langsmith import traceable, get_current_run_tree
+from qdrant_client import QdrantClient
+from qdrant_client.models import (
+    Prefetch,
+    Document,
+    RrfQuery,
+    Rrf,
+    Filter,
+    MatchAny,
+    FieldCondition,
+    FusionQuery
+)
 
 
 @traceable(
@@ -101,3 +110,76 @@ def get_formatted_item_context(query: str, top_k: int = 5) -> str:
     context = retrieve_data(query, top_k)
 
     return process_context(context)
+
+@traceable(
+    name="retrieve_reviews_data",
+    run_type='retriever'
+)
+def retrieve_prefiltered_review_data(query: str, parent_asins: list[str], qdrant_client, k=5) -> dict:
+   
+    query_embedding = get_embedding(query)
+    results = qdrant_client.query_points(
+        collection_name="Amazon-reviews-collection-01",
+        prefetch=[
+            Prefetch(
+                query=query_embedding,
+                using="text-embedding-3-small",
+                filter=Filter(
+                    must=[
+                        FieldCondition(
+                            key="parent_asin",
+                            match=MatchAny(
+                                any=parent_asins
+                            )
+                        )
+                    ]
+                ),
+                limit=20
+            )
+        ],
+        query=FusionQuery(fusion='rrf'),
+        limit=k
+    )
+
+    retrieved_context_ids = []
+    retrieved_context = []
+    similarity_scores = []
+    for result in results.points:
+        retrieved_context_ids.append(result.payload["parent_asin"])
+        retrieved_context.append(result.payload["preprocessed_data"])
+        similarity_scores.append(result.score)
+
+    return {
+        "retrieved_context_ids": retrieved_context_ids,
+        "retrieved_context": retrieved_context,
+        "similarity_scores": similarity_scores
+    }
+
+@traceable(
+    name="format_retrieved_reviews",
+    run_type="prompt"
+)
+def process_reviews(reviews: dict) -> str:
+    formatted_reviews = ""
+    for id, review in zip(reviews["retrieved_context_ids"], reviews["retrieved_context"]):
+        formatted_reviews += f"- ID: {id}, review: {review}\n"
+    
+    return formatted_reviews
+
+@tool
+def get_formatted_item_reviews(query: str, items: list[str], top_k: int = 5) -> str:
+    """Get the top k reviews matching a query for a list of prefiltered items.
+
+    Args:
+        query: The query to get the top k reviews for
+        items: The list of item IDs to prefilter for before running the query
+        top_k: The number of reviews to retreieve, this should be at least 20 if multiple items are prefiltered
+    
+    Returns:
+        A string of the top k reviews with IDs prepending each review. Each line is a single review for one of the items in the items list.
+    """
+
+    qdrant_client = QdrantClient(url="http://qdrant:6333")
+    reviews = retrieve_prefiltered_review_data(query, items, qdrant_client, top_k)
+
+    return process_reviews(reviews)

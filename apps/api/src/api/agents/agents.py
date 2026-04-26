@@ -4,7 +4,7 @@ from langchain_core.messages import SystemMessage, AIMessage
 from langchain_openai import ChatOpenAI
 from langsmith import traceable, get_current_run_tree
 
-from api.agents.tools import get_formatted_item_context
+from api.agents.tools import get_formatted_item_context, get_formatted_item_reviews
 from api.agents.utils.prompt_management import from_template_config
 from api.agents.models import FinalResponse, IntentRouterNode
 
@@ -19,7 +19,7 @@ def agent_node(state) -> dict:
     prompt = from_template_config("api/agents/prompts/shopping_assistant.yaml", "shopping_assistant").render()
 
     llm = ChatOpenAI(model="gpt-4.1-mini").bind_tools(
-        [get_formatted_item_context, FinalResponse],
+        [get_formatted_item_context, get_formatted_item_reviews, FinalResponse],
         tool_choice="auto"
     )
 

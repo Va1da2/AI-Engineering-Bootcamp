@@ -8,7 +8,7 @@ from langgraph.prebuilt import ToolNode
 from langgraph.checkpoint.postgres import PostgresSaver
 
 from api.agents.agents import agent_node, intent_router_node
-from api.agents.tools import get_formatted_item_context
+from api.agents.tools import get_formatted_item_context, get_formatted_item_reviews
 from api.agents.models import State
 
 
@@ -34,7 +34,7 @@ def tool_router(state: State) -> str:
 
 
 workflow = StateGraph(State)
-workflow.add_node("tool_node", ToolNode([get_formatted_item_context]))
+workflow.add_node("tool_node", ToolNode([get_formatted_item_context, get_formatted_item_reviews]))
 workflow.add_node("agent_node", agent_node)
 workflow.add_node("intent_router_node", intent_router_node)
 
