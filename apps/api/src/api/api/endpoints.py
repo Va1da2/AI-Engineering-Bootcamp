@@ -1,12 +1,13 @@
 import logging
 
 from fastapi import APIRouter, Request
+from fastapi.responses import StreamingResponse
 from qdrant_client import QdrantClient
 from langsmith import Client as LSClient
 
 from api.api.models import RAGRequest, RAGResponse, RAGUsedContext, FeedbackRequest, FeedbackResponse
 from api.api.processors.submit_feedback import submit_feedback
-from api.agents.graph import run_agent_wrapper
+from api.agents.graph import stream_agent_wrapper
 
 
 logging.basicConfig(
@@ -22,14 +23,11 @@ agent_router = APIRouter()
 feedback_router = APIRouter()
 
 @agent_router.post("/")
-def agent(request: Request, payload: RAGRequest) -> RAGResponse:
+def agent(request: Request, payload: RAGRequest) -> StreamingResponse:
 
-    result = run_agent_wrapper(payload.query, payload.thread_id, qdrant_client)
-
-    return RAGResponse(
-        answer=result["answer"],
-        used_context=[RAGUsedContext(**item) for item in result["used_context"]],
-        trace_id=result["trace_id"] 
+    return StreamingResponse(
+        stream_agent_wrapper(payload.query, payload.thread_id, qdrant_client),
+        media_type="text/event-stream"
     )
 
 @feedback_router.post("/")

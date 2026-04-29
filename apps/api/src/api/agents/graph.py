@@ -1,3 +1,4 @@
+import json
 import numpy as np
 
 from qdrant_client.models import Filter, FieldCondition, MatchValue
@@ -10,6 +11,7 @@ from langgraph.checkpoint.postgres import PostgresSaver
 from api.agents.agents import agent_node, intent_router_node
 from api.agents.tools import get_formatted_item_context, get_formatted_item_reviews
 from api.agents.models import State
+from api.agents.utils.utils import process_graph_event, string_for_sse
 
 
 def intent_router_conditional_edges(state: State) -> str:
@@ -58,7 +60,7 @@ workflow.add_conditional_edges(
 workflow.add_edge("tool_node", "agent_node")
 
 
-def run_agent(question: str, thread_id: str) -> dict:
+def stream_agent_wrapper(question: str, thread_id: str, qdrant_client, top_k=5):
 
     config = {
         "configurable": {
@@ -74,13 +76,15 @@ def run_agent(question: str, thread_id: str) -> dict:
         "postgresql://langgraph_user:langgraph_password@postgres:5432/langgraph_db"
     ) as checkpointer:
         graph = workflow.compile(checkpointer=checkpointer)
-        result = graph.invoke(initial_state, config)
+       
+        for chunk in graph.stream(initial_state, config=config, stream_mode=["debug", "values"]):
+            processed_chunk = process_graph_event(chunk)
 
-    return result
+            if processed_chunk:
+                yield string_for_sse(processed_chunk)
 
-def run_agent_wrapper(question: str, thread_id: str, qdrant_client, top_k=5):
-
-    result = run_agent(question, thread_id)
+            if chunk[0] == "values":
+                result = chunk[1]
 
     used_context = []
     dummy_vector = np.zeros(1536)
@@ -112,8 +116,15 @@ def run_agent_wrapper(question: str, thread_id: str, qdrant_client, top_k=5):
                 "description": item.get("description")
             })
 
-    return {
-        "answer": result.get("answer"),
-        "used_context": used_context,
-        "trace_id": result.get("trace_id", "")
-    }
+    yield string_for_sse(
+        json.dumps(
+            {
+                "type": "final_answer",
+                "data": {
+                    "answer": result.get("answer"),
+                    "used_context": used_context,
+                    "trace_id": result.get("trace_id", "")
+                }
+            }
+        )
+    )

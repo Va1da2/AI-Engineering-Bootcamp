@@ -48,6 +48,8 @@ def agent_node(state) -> dict:
                 answer = tool_call.get("args").get("answer")
                 references.extend(tool_call.get("args").get("references"))
                 response = AIMessage(content=answer)
+    else:
+        answer = response.content
     
     return {
         "messages": [response],
